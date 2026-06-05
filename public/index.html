@@ -10,15 +10,17 @@ const CATS=[
 ];
 
 const USERS=[
-  {id:"N",name:"Nahuel",color:"#2979FF"},
-  {id:"F",name:"Florencia",color:"#9C27B0"},
+  {id:"N",name:"Nahuel",color:"#2979FF",grad:"linear-gradient(135deg,#2979FF,#1E88E5)"},
+  {id:"F",name:"Florencia",color:"#9C27B0",grad:"linear-gradient(135deg,#9C27B0,#7B1FA2)"},
 ];
 
-// ✅ IMPORTANTE: ahora tiene versionado
+// ✅ FIX PRO: versionado global
 const EMPTY={expenses:[],incomes:[],shopping:[],updatedAt:0};
 
 const fmt=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(n||0);
 const toStr=()=>new Date().toISOString().split("T")[0];
+const sowStr=()=>{const d=new Date();d.setDate(d.getDate()-d.getDay());return d.toISOString().split("T")[0];};
+const getCat=id=>CATS.find(c=>c.id===id)||CATS[6];
 const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 const PROXY_URL="/api/sync";
@@ -35,24 +37,26 @@ async function gsRun(fn,param){
 
 let S={
   screen:"loading",
+  tab:"home",
   activeUser:localStorage.getItem("gf_user")||null,
   data:EMPTY,
   syncing:false,
-  online:false
+  online:false,
 };
 
+// ✅ control interno
 let pollIv=null,writeT=null,writing=false;
 
 function set(patch){S={...S,...patch};render();}
 
-/* =========================
-   ✅ WRITE (CON VERSION)
-========================= */
+/* =====================================================
+   ✅ WRITE CON VERSION
+===================================================== */
 function scheduleWrite(data){
-  if(writeT)clearTimeout(writeT);
-  writing=true;
+  if(writeT) clearTimeout(writeT);
+  writing = true;
 
-  writeT=setTimeout(async()=>{
+  writeT = setTimeout(async ()=>{
     try{
       await gsRun("saveData",data);
       set({online:true});
@@ -64,111 +68,148 @@ function scheduleWrite(data){
   },500);
 }
 
-/* =========================
-   ✅ UPDATE DATA
-========================= */
+/* =====================================================
+   ✅ UPDATE CON TIMESTAMP
+===================================================== */
 function upd(fn){
-  const next=fn(S.data);
+  const next = fn(S.data);
 
-  const withVersion={
+  const withVersion = {
     ...next,
-    updatedAt:Date.now()
+    updatedAt: Date.now()
   };
 
   set({data:withVersion});
   scheduleWrite(withVersion);
 }
 
-/* =========================
-   ✅ POLL PRO (ANTI-BUG)
-========================= */
+/* =====================================================
+   ✅ POLL PRO (ANTI BUG)
+===================================================== */
 async function poll(){
-  if(writing)return;
+  if(writing) return;
 
   try{
-    const d=await gsRun("getData");
-    if(!d)return;
+    const d = await gsRun("getData");
+    if(!d) return;
 
-    const localVer=S.data?.updatedAt||0;
-    const remoteVer=d.updatedAt||0;
+    const localVer = S.data?.updatedAt || 0;
+    const remoteVer = d.updatedAt || 0;
 
-    // ✅ SOLO actualiza si es más nuevo
-    if(remoteVer>localVer){
-      set({data:d,online:true});
+    if(remoteVer > localVer){
+      set({ data: d, online:true });
+
+      if(S.screen==="main" && S.tab==="home"){
+        updateNums();
+      }
+
+      const dot=document.querySelector(".sync-dot");
+      if(dot)dot.style.background="var(--green)";
     }
-  }catch{
+  }
+  catch{
     set({online:false});
+    const dot=document.querySelector(".sync-dot");
+    if(dot)dot.style.background="var(--border)";
   }
 }
 
-/* =========================
-   ✅ LOAD
-========================= */
+/* =====================================================
+   LOAD
+===================================================== */
 async function load(){
+  set({syncing:true});
   try{
     const d=await gsRun("getData");
-    set({
-      data:d||EMPTY,
-      online:true,
-      screen:S.activeUser?"main":"login"
-    });
-  }catch{
-    set({
-      online:false,
-      screen:S.activeUser?"main":"login"
-    });
+    set({data:d||EMPTY,online:true,syncing:false,screen:S.activeUser?"main":"login"});
+  }
+  catch{
+    set({online:false,syncing:false,screen:S.activeUser?"main":"login"});
   }
 }
 
-/* =========================
-   ✅ SAVE FUNCTIONS
-========================= */
+/* =====================================================
+   FUNCIONES DE NEGOCIO
+===================================================== */
 function saveExp(){
   const exp={
     id:genId(),
-    amount:100, // ejemplo
+    amount:parseFloat(S.amount),
+    description:S.desc,
+    category:S.cat,
     user:S.activeUser,
     date:toStr()
   };
 
-  upd(d=>({...d,expenses:[exp,...d.expenses]}));
+  upd(d=>({
+    ...d,
+    expenses:[exp,...(d.expenses||[])],
+    shopping:(S.cat==="mercaderia"&&S.desc)
+      ?[{id:genId(),text:S.desc,checked:false},...(d.shopping||[])]
+      :(d.shopping||[])
+  }));
+
+  set({screen:"main",tab:"home"});
 }
 
 function saveInc(){
   const inc={
     id:genId(),
-    amount:100,
+    amount:parseFloat(S.incAmt),
+    description:S.incDesc||"Ingreso",
     user:S.activeUser,
     date:toStr()
   };
 
-  upd(d=>({...d,incomes:[inc,...d.incomes]}));
+  upd(d=>({...d,incomes:[inc,...(d.incomes||[])]}));
+  set({screen:"main",tab:"home"});
 }
 
-/* =========================
-   ✅ RENDER SIMPLE (demo)
-========================= */
+function calcUser(uid){
+  const expenses=S.data.expenses||[];
+  const incomes=S.data.incomes||[];
+
+  const uExp=expenses.filter(e=>e.user===uid);
+  const uInc=incomes.filter(i=>i.user===uid);
+
+  const totI=uInc.reduce((s,i)=>s+i.amount,0);
+  const totE=uExp.reduce((s,e)=>s+e.amount,0);
+
+  return{
+    totI,
+    totE,
+    bal:totI-totE,
+  };
+}
+
+/* =====================================================
+   RENDER SIMPLE (usa el tuyo si ya lo tenías)
+===================================================== */
 function render(){
   const app=document.getElementById("app");
   app.innerHTML="";
 
   app.innerHTML=`
     <div style="padding:20px;font-family:sans-serif">
-      <h2>Mi Wallet ✅ Sync PRO</h2>
+      <h2>Mi Wallet ✅ FIX PRO</h2>
       <p>Online: ${S.online}</p>
-      <p>UpdatedAt: ${S.data.updatedAt}</p>
-      <button onclick="saveExp()">Agregar gasto</button>
+      <p>updatedAt: ${S.data.updatedAt}</p>
+
+      <button onclick="S.amount=100;S.cat='mercaderia';saveExp()">+ gasto</button>
+      <button onclick="S.incAmt=200;saveInc()">+ ingreso</button>
+
       <pre>${JSON.stringify(S.data,null,2)}</pre>
     </div>
   `;
 }
 
-/* =========================
+/* =====================================================
    INIT
-========================= */
+===================================================== */
 render();
+
 load().then(()=>{
   if(pollIv)clearInterval(pollIv);
-  pollIv=setInterval(poll,4000);
+  pollIv=setInterval(poll,5000);
 });
 </script>
