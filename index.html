@@ -1,17 +1,798 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#2D7D6F" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Gastos" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
-    <title>Gastos Familiares</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="Wallet"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-touch-fullscreen" content="yes"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>Gastos Familiares</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#F5F6FA;
+      --white:#FFFFFF;
+      --border:#EAECF0;
+      --text:#1A1D2E;
+      --text2:#6B7280;
+      --text3:#9CA3AF;
+      --purple:#6C5CE7;
+      --purple2:#5A4BD1;
+      --purple-light:#EEF0FF;
+      --blue:#2979FF;
+      --blue2:#1565C0;
+      --orange:#FF9800;
+      --orange2:#E65100;
+      --magenta:#E040FB;
+      --magenta2:#AA00FF;
+      --red:#F44336;
+      --red2:#B71C1C;
+      --green:#00C48C;
+      --green2:#009966;
+      --green-light:#E8FAF4;
+      --red-light:#FFF0F0;
+      --shadow:0 2px 12px rgba(0,0,0,0.07);
+      --shadow-md:0 4px 20px rgba(0,0,0,0.10);
+      --shadow-lg:0 8px 32px rgba(0,0,0,0.13);
+      --radius:16px;
+      --radius-sm:12px;
+      --radius-xs:8px;
+    }
+    *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;margin:0;padding:0}
+    html,body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh}
+    #app{max-width:430px;margin:0 auto;position:relative;min-height:100vh;background:var(--bg)}
+    button,input{font-family:'Nunito',sans-serif;cursor:pointer}
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .screen{min-height:100vh;padding-bottom:90px;overflow-y:auto}
+    .tap:active{transform:scale(0.97);transition:transform 0.08s}
+    .numkey:active{transform:scale(0.92)!important}
+
+    /* Toast */
+    .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 22px;border-radius:40px;font-size:13px;font-weight:700;z-index:1000;white-space:nowrap;box-shadow:var(--shadow-lg);animation:fadeIn 0.2s ease}
+
+    /* Sync */
+    .sync-row{position:fixed;top:14px;right:16px;display:flex;align-items:center;gap:5px;z-index:100}
+    .sync-dot{width:7px;height:7px;border-radius:50%;transition:all 0.4s}
+    .spinner{width:13px;height:13px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--purple);animation:spin 0.8s linear infinite}
+
+    /* Bottom nav — Kubayar style */
+    .bottom-nav{
+      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+      width:100%;max-width:430px;background:var(--white);
+      border-top:1px solid var(--border);
+      display:flex;padding:8px 8px 20px;z-index:50;
+      box-shadow:0 -2px 12px rgba(0,0,0,0.06);
+      gap:4px;
+    }
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;border-radius:var(--radius-sm);padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);background:transparent;transition:all 0.15s;letter-spacing:0.2px}
+    .nav-btn.active{background:var(--purple-light);color:var(--purple)}
+    .nav-icon{font-size:18px;line-height:1.2}
+
+    /* Kubayar balance cards — colorful with circles */
+    .kub-card{
+      border-radius:20px;padding:22px 20px;position:relative;overflow:hidden;
+      box-shadow:var(--shadow-md);flex-shrink:0;
+    }
+    .kub-card::before{content:"";position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.15)}
+    .kub-card::after{content:"";position:absolute;bottom:-40px;right:20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.1)}
+    .kub-card-blue{background:linear-gradient(135deg,#2979FF 0%,#1E88E5 100%)}
+    .kub-card-orange{background:linear-gradient(135deg,#FF9800 0%,#F57C00 100%)}
+    .kub-card-purple{background:linear-gradient(135deg,#9C27B0 0%,#7B1FA2 100%)}
+    .kub-card-red{background:linear-gradient(135deg,#F44336 0%,#E53935 100%)}
+    .kub-card-green{background:linear-gradient(135deg,#00C48C 0%,#009966 100%)}
+
+    /* White card */
+    .white-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:20px}
+
+    /* Section title — Kubayar style */
+    .section-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px}
+    .section-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+
+    /* Labels */
+    .kub-label{font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+    .label-dark{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px}
+
+    /* Transaction row */
+    .tx-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border)}
+    .tx-row:last-child{border-bottom:none}
+
+    /* Icon box — Kubayar colored rectangles */
+    .icon-box{width:46px;height:40px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+
+    /* Numpad */
+    .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .numkey{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:17px 0;font-size:22px;font-weight:700;color:var(--text);box-shadow:var(--shadow);width:100%;transition:all 0.1s}
+
+    /* Categories */
+    .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .cat-btn{background:var(--white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;transition:all 0.15s;box-shadow:var(--shadow)}
+    .cat-btn:active{transform:translateY(-2px)}
+
+    /* Steps */
+    .step-bar{height:4px;border-radius:2px;transition:all 0.25s}
+
+    /* Inputs */
+    .field{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:15px;color:var(--text);outline:none;transition:border-color 0.2s;font-weight:600}
+    .field:focus{border-color:var(--purple);background:var(--white)}
+    .field::placeholder{color:var(--text3);font-weight:500}
+
+    /* Buttons */
+    .btn-purple{border:none;border-radius:var(--radius-sm);padding:16px;font-size:15px;font-weight:800;color:#fff;background:var(--purple);display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-shadow:0 6px 20px rgba(108,92,231,0.35);transition:all 0.15s}
+    .btn-purple:active{transform:scale(0.98)}
+    .btn-outline{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:16px;font-size:14px;font-weight:700;color:var(--text2)}
+    .btn-sec{flex:1;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 8px;font-size:11px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:var(--shadow);transition:all 0.12s}
+    .btn-sec:active{transform:scale(0.97)}
+    .btn-sec-icon{font-size:18px}
+
+    /* Back btn */
+    .back-btn{width:38px;height:38px;border-radius:var(--radius-xs);border:1.5px solid var(--border);background:var(--white);color:var(--text);font-size:17px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+
+    /* Check */
+    .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--border);background:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;transition:all 0.15s}
+
+    /* Auto tag */
+    .auto-tag{font-size:9px;background:var(--purple-light);color:var(--purple);padding:2px 8px;border-radius:6px;font-weight:800;letter-spacing:0.3px}
+
+    /* Amount */
+    .amt-big{font-size:54px;font-weight:900;letter-spacing:-3px;line-height:1}
+    .confirm-amt{font-size:42px;font-weight:900;letter-spacing:-2px;line-height:1}
+
+    /* Bar */
+    .bar-track{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
+
+    /* Pill badge */
+    .pill-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:0.3px}
+
+    /* Stat box */
+    .stat-box{flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;backdrop-filter:blur(4px)}
+
+    /* Kubayar pick avatar */
+    .pick-avatar{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;flex-shrink:0;color:#fff}
+
+    /* Amount input area */
+    .amt-area{background:var(--bg);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:20px}
+
+    /* User toggle */
+    .user-toggle{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:30px;padding:3px;gap:2px}
+    .user-pill{padding:5px 14px;border-radius:28px;border:none;background:transparent;font-size:12px;font-weight:800;color:var(--text3);transition:all 0.18s}
+    .user-pill.active{background:var(--white);color:var(--purple);box-shadow:var(--shadow)}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const CATS=[
+  {id:"mercaderia",label:"Mercadería",icon:"🛒",color:"#2979FF",bg:"#EBF3FF"},
+  {id:"servicios",label:"Servicios",icon:"⚡",color:"#FF9800",bg:"#FFF4E5"},
+  {id:"transporte",label:"Transporte",icon:"🚗",color:"#9C27B0",bg:"#F9F0FF"},
+  {id:"salud",label:"Salud",icon:"🏥",color:"#F44336",bg:"#FFF0F0"},
+  {id:"ocio",label:"Ocio",icon:"🎬",color:"#00C48C",bg:"#E8FAF4"},
+  {id:"ropa",label:"Ropa",icon:"👕",color:"#6C5CE7",bg:"#EEF0FF"},
+  {id:"otro",label:"Otro",icon:"📦",color:"#6B7280",bg:"#F3F4F6"},
+];
+
+// Kubayar card colors per user/purpose
+const CARD_COLORS=["kub-card-blue","kub-card-orange","kub-card-purple","kub-card-red","kub-card-green"];
+
+const USERS=[
+  {id:"N",name:"Nahuel",color:"#2979FF",cardClass:"kub-card-blue",grad:"linear-gradient(135deg,#2979FF,#1E88E5)"},
+  {id:"F",name:"Florencia",color:"#9C27B0",cardClass:"kub-card-purple",grad:"linear-gradient(135deg,#9C27B0,#7B1FA2)"},
+];
+const EMPTY={expenses:[],incomes:[],shopping:[]};
+const fmt=n=>new Intl.NumberFormat("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0}).format(n||0);
+const toStr=()=>new Date().toISOString().split("T")[0];
+const sowStr=()=>{const d=new Date();d.setDate(d.getDate()-d.getDay());return d.toISOString().split("T")[0];};
+const getCat=id=>CATS.find(c=>c.id===id)||CATS[6];
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// URL del backend Apps Script
+const GAS_URL="https://script.google.com/macros/s/AKfycbzxzE0Xz4D5D-jOwLOofNowWeop8UxDh0fEH-ka2AB_JrXbhJCqPWPh1jvmQCOd2FNi/exec";
+
+async function gsRun(fn,param){
+  if(fn==="saveData"){
+    const r=await fetch(GAS_URL,{method:"POST",body:JSON.stringify(param),headers:{"Content-Type":"text/plain"},redirect:"follow"});
+    return await r.json();
+  } else {
+    const r=await fetch(GAS_URL+"?action=get",{method:"GET",redirect:"follow"});
+    return await r.json();
+  }
+}
+
+let S={
+  screen:"loading",tab:"home",
+  activeUser:localStorage.getItem("gf_user")||null,
+  data:EMPTY,syncing:false,online:false,toast:null,
+  amount:"",desc:"",cat:null,step:1,
+  incAmt:"",incDesc:"",incStep:1,
+};
+let pollIv=null,writeT=null,toastT=null;
+
+function set(patch){S={...S,...patch};render();}
+function showToast(msg){if(toastT)clearTimeout(toastT);set({toast:msg});toastT=setTimeout(()=>set({toast:null}),2500);}
+
+async function load(){
+  set({syncing:true});
+  try{const d=await gsRun("getData");set({data:d||EMPTY,online:true,syncing:false,screen:S.activeUser?"main":"pick"});}
+  catch{set({online:false,syncing:false,screen:S.activeUser?"main":"pick"});}
+}
+
+function scheduleWrite(data){
+  if(writeT)clearTimeout(writeT);
+  writeT=setTimeout(async()=>{try{await gsRun("saveData",data);set({online:true});}catch{set({online:false});}},800);
+}
+
+async function poll(){
+  try{
+    const d=await gsRun("getData");
+    if(d){
+      S.data=d;
+      S.online=true;
+      // Solo actualiza números sin re-renderizar, evita titileo
+      if(S.screen==="main"&&S.tab==="home"){
+        updateNums();
+      }
+      // Actualiza el dot de sincronización sin re-render
+      const dot=document.querySelector(".sync-dot");
+      if(dot)dot.style.background="var(--green)";
+    }
+  }
+  catch{
+    S.online=false;
+    const dot=document.querySelector(".sync-dot");
+    if(dot)dot.style.background="var(--border)";
+  }
+}
+
+function updateNums(){
+  const expenses=S.data.expenses||[];
+  const incomes=S.data.incomes||[];
+  const shBal=incomes.reduce((s,i)=>s+i.amount,0)-expenses.reduce((s,e)=>s+e.amount,0);
+  const e=id=>document.getElementById(id);
+
+  // Actualiza cada usuario por separado con sus IDs únicos
+  USERS.forEach(u=>{
+    const cv=calcUser(u.id);
+    if(e(`bal-${u.id}`))e(`bal-${u.id}`).textContent=fmt(cv.bal);
+    if(e(`inc-${u.id}`))e(`inc-${u.id}`).textContent=fmt(cv.totI);
+    if(e(`exp-${u.id}`))e(`exp-${u.id}`).textContent=fmt(cv.totE);
+  });
+
+  // Semana del usuario activo
+  const cvActive=calcUser(S.activeUser);
+  if(e("n-wk"))e("n-wk").textContent=fmt(cvActive.wkE);
+  if(e("n-shared"))e("n-shared").textContent=fmt(shBal);
+
+  const unread=(S.data.shopping||[]).filter(s=>!s.checked).length;
+  if(e("shop-badge")){e("shop-badge").textContent=unread;e("shop-badge").style.display=unread>0?"inline-flex":"none";}
+}
+
+function upd(fn){const next=fn(S.data);set({data:next});scheduleWrite(next);}
+
+function saveExp(){
+  if(!S.amount||!S.cat)return;
+  const exp={id:genId(),amount:parseFloat(S.amount),description:S.desc,category:S.cat,user:S.activeUser,date:toStr()};
+  upd(d=>({...d,expenses:[exp,...(d.expenses||[])],shopping:(S.cat==="mercaderia"&&S.desc.trim())?[{id:genId(),text:S.desc.trim(),checked:false,from:"expense"},...(d.shopping||[])]:(d.shopping||[])}));
+  set({amount:"",desc:"",cat:null,step:1,screen:"main",tab:"home"});
+  showToast("✓ Gasto registrado");
+}
+
+function saveInc(){
+  if(!S.incAmt)return;
+  const inc={id:genId(),amount:parseFloat(S.incAmt),description:S.incDesc||"Sueldo",user:S.activeUser,date:toStr()};
+  upd(d=>({...d,incomes:[inc,...(d.incomes||[])]}));
+  set({incAmt:"",incDesc:"",incStep:1,screen:"main",tab:"home"});
+  showToast("✓ Ingreso registrado");
+}
+
+function calcUser(uid){
+  const expenses=S.data.expenses||[];
+  const incomes=S.data.incomes||[];
+  const uExp=expenses.filter(e=>e.user===uid);
+  const uInc=incomes.filter(i=>i.user===uid);
+  const totI=uInc.reduce((s,i)=>s+i.amount,0);
+  const totE=uExp.reduce((s,e)=>s+e.amount,0);
+  const sw=sowStr();
+  const wkE=uExp.filter(e=>e.date>=sw).reduce((s,e)=>s+e.amount,0);
+  const dow=new Date().getDay()||7;
+  return{totI,totE,bal:totI-totE,wkE,fore:(wkE/dow)*(7-dow),uExp};
+}
+
+const h=(tag,attr={},kids=[])=>{
+  const el=document.createElement(tag);
+  for(const[k,v]of Object.entries(attr)){
+    if(k==="style"&&typeof v==="object")Object.assign(el.style,v);
+    else if(k.startsWith("on"))el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==="className")el.className=v;
+    else if(k==="id")el.id=v;
+    else el.setAttribute(k,v);
+  }
+  for(const ch of kids){if(ch==null)continue;el.appendChild(typeof ch==="string"?document.createTextNode(ch):ch);}
+  return el;
+};
+
+function mkNumpad(onChange,onConfirm,color){
+  return h("div",{className:"numpad"},["1","2","3","4","5","6","7","8","9","⌫","0","✓"].map(k=>{
+    const st={};
+    if(k==="✓"){st.background=color;st.color="#fff";st.border="none";st.boxShadow=`0 6px 16px ${color}50`;}
+    else if(k==="⌫"){st.background="var(--bg)";st.color="var(--text2)";st.border="none";}
+    return h("button",{className:"numkey tap",style:st,onClick:()=>{
+      if(k==="⌫")onChange(v=>v.slice(0,-1));
+      else if(k==="✓")onConfirm();
+      else onChange(v=>v.length<9?v+k:v);
+    }},[k]);
+  }));
+}
+
+function mkSteps(cur,tot,color){
+  const row=h("div",{style:{display:"flex",gap:"6px",justifyContent:"center",marginBottom:"24px"}});
+  for(let i=0;i<tot;i++)row.appendChild(h("div",{className:"step-bar",style:{width:cur>i?"28px":"8px",background:cur>i?color:"var(--border)"}}));
+  return row;
+}
+
+function mkSubH(title,onBack,right){
+  return h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"48px 20px 20px"}},[
+    h("button",{className:"back-btn tap",onClick:onBack},["←"]),
+    h("div",{style:{fontSize:"17px",fontWeight:"800",color:"var(--text)"}},[title]),
+    right||h("div",{style:{width:"38px"}}),
+  ]);
+}
+
+// ── Pick screen ──
+function sPick(){
+  return h("div",{style:{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",justifyContent:"center",padding:"32px 20px"}},[
+    h("div",{style:{marginBottom:"36px"}},[
+      h("div",{style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"20px"}},[
+        h("div",{style:{width:"44px",height:"44px",borderRadius:"14px",background:"var(--purple)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",boxShadow:"0 6px 18px rgba(108,92,231,0.35)"}}),
+        h("div",{},[
+          h("div",{style:{fontSize:"18px",fontWeight:"900",color:"var(--text)",letterSpacing:"-0.5px"}},["Mi Wallet"]),
+          h("div",{style:{fontSize:"11px",color:"var(--text3)",fontWeight:"600"}},["Gestión de gastos familiares"]),
+        ]),
+      ]),
+      h("div",{style:{fontSize:"13px",color:"var(--text2)",fontWeight:"600"}},["Seleccioná tu perfil para continuar"]),
+    ]),
+    h("div",{style:{display:"flex",flexDirection:"column",gap:"12px"}},[
+      ...USERS.map(u=>h("button",{className:"white-card tap",style:{display:"flex",alignItems:"center",gap:"16px",textAlign:"left",border:"1px solid var(--border)",cursor:"pointer",transition:"all 0.15s"},
+        onClick:()=>{localStorage.setItem("gf_user",u.id);set({activeUser:u.id,screen:"main",tab:"home"});}},[
+        h("div",{className:"pick-avatar",style:{background:u.grad}},[u.id]),
+        h("div",{style:{flex:"1"}},[
+          h("div",{style:{fontSize:"16px",fontWeight:"800",color:"var(--text)"}},[u.name]),
+          h("div",{style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px",fontWeight:"600"}},["Tocar para ingresar →"]),
+        ]),
+        h("div",{style:{width:"32px",height:"32px",borderRadius:"10px",background:`${u.color}18`,display:"flex",alignItems:"center",justifyContent:"center",color:u.color,fontSize:"16px",fontWeight:"700"}},["→"]),
+      ]))
+    ]),
+  ]);
+}
+
+// ── Main ──
+function sMain(){
+  const tabs={home:sHome,activity:sActivity,shopping:sShopping,dashboard:sDashboard};
+  const shopping=S.data.shopping||[];
+  const unread=shopping.filter(s=>!s.checked).length;
+
+  const nav=h("div",{className:"bottom-nav"},[
+    ...[
+      {id:"home",icon:"⊞",label:"Inicio"},
+      {id:"activity",icon:"≡",label:"Movimientos"},
+      {id:"shopping",icon:"🛒",label:"Lista",badge:unread},
+      {id:"dashboard",icon:"◎",label:"Análisis"},
+    ].map(item=>{
+      const active=S.tab===item.id;
+      return h("button",{className:`nav-btn tap${active?" active":""}`,onClick:()=>set({tab:item.id})},[
+        h("div",{style:{position:"relative",display:"inline-block"}},[
+          h("div",{className:"nav-icon"},[item.icon]),
+          ...(item.badge>0?[h("div",{id:"shop-badge",style:{position:"absolute",top:"-5px",right:"-8px",background:"var(--red)",color:"#fff",borderRadius:"8px",fontSize:"9px",fontWeight:"800",padding:"1px 5px",display:"inline-flex",alignItems:"center"}},[""+item.badge])]: [])
+        ]),
+        item.label,
+      ]);
+    })
+  ]);
+  const wrap=h("div",{style:{position:"relative"}});
+  wrap.appendChild((tabs[S.tab]||sHome)());
+  wrap.appendChild(nav);
+  return wrap;
+}
+
+// ── Home ──
+function sHome(){
+  const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
+  const cv=calcUser(S.activeUser);
+  const expenses=S.data.expenses||[];
+  const shBal=(S.data.incomes||[]).reduce((s,i)=>s+i.amount,0)-expenses.reduce((s,e)=>s+e.amount,0);
+
+  return h("div",{className:"screen"},[
+    // Header — Kubayar style: white bg, title left, user toggle right
+    h("div",{style:{background:"var(--white)",padding:"48px 20px 16px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}},[
+      h("div",{},[
+        h("div",{style:{fontSize:"11px",fontWeight:"700",color:"var(--text3)",letterSpacing:"0.8px",marginBottom:"2px"}},["MI WALLET"]),
+        h("div",{style:{fontSize:"20px",fontWeight:"900",color:"var(--text)",letterSpacing:"-0.5px"}},[user.name]),
+      ]),
+      h("div",{className:"user-toggle"},[
+        ...USERS.map(u=>h("button",{className:`user-pill tap${S.activeUser===u.id?" active":""}`,style:{color:S.activeUser===u.id?u.color:""},
+          onClick:()=>{localStorage.setItem("gf_user",u.id);set({activeUser:u.id});}
+        },[u.id]))
+      ]),
+    ]),
+
+    h("div",{style:{padding:"0 20px"}},[
+
+      // Kubayar-style scrollable balance cards
+      h("div",{style:{marginBottom:"20px"}},[
+        h("div",{className:"label-dark"},["SALDOS"]),
+        h("div",{style:{display:"flex",gap:"12px",overflowX:"auto",paddingBottom:"4px",scrollbarWidth:"none"}},[
+          // User N card
+          h("div",{className:`kub-card ${USERS[0].cardClass}`,style:{minWidth:"200px"}},[
+            h("div",{style:{position:"relative",zIndex:1}},[
+              h("div",{className:"kub-label"},["Saldo · Nahuel"]),
+              h("div",{id:"bal-N",style:{fontSize:"26px",fontWeight:"900",color:"#fff",letterSpacing:"-1px",marginBottom:"16px"}},[fmt(calcUser("N").bal)]),
+              h("div",{style:{display:"flex",justifyContent:"space-between"}},[
+                h("div",{},[h("div",{className:"kub-label"},["Ingresos"]),h("div",{id:"inc-N",style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},[fmt(calcUser("N").totI)])]),
+                h("div",{},[h("div",{className:"kub-label"},["Gastos"]),h("div",{id:"exp-N",style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},[fmt(calcUser("N").totE)])]),
+              ]),
+            ]),
+          ]),
+          // User F card
+          h("div",{className:`kub-card ${USERS[1].cardClass}`,style:{minWidth:"200px"}},[
+            h("div",{style:{position:"relative",zIndex:1}},[
+              h("div",{className:"kub-label"},["Saldo · Florencia"]),
+              h("div",{id:"bal-F",style:{fontSize:"26px",fontWeight:"900",color:"#fff",letterSpacing:"-1px",marginBottom:"16px"}},[fmt(calcUser("F").bal)]),
+              h("div",{style:{display:"flex",justifyContent:"space-between"}},[
+                h("div",{},[h("div",{className:"kub-label"},["Ingresos"]),h("div",{id:"inc-F",style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},[fmt(calcUser("F").totI)])]),
+                h("div",{},[h("div",{className:"kub-label"},["Gastos"]),h("div",{id:"exp-F",style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},[fmt(calcUser("F").totE)])]),
+              ]),
+            ]),
+          ]),
+          // Shared card
+          h("div",{className:"kub-card kub-card-green",style:{minWidth:"200px"}},[
+            h("div",{style:{position:"relative",zIndex:1}},[
+              h("div",{className:"kub-label"},["Fondo Compartido"]),
+              h("div",{id:"n-shared",style:{fontSize:"26px",fontWeight:"900",color:"#fff",letterSpacing:"-1px",marginBottom:"16px"}},[fmt(shBal)]),
+              h("div",{style:{display:"flex",justifyContent:"space-between"}},[
+                h("div",{},[h("div",{className:"kub-label"},["Esta Semana"]),h("div",{id:"n-wk",style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},[fmt(cv.wkE)])]),
+                h("div",{},[h("div",{className:"kub-label"},["N+F"]),h("div",{style:{fontSize:"13px",fontWeight:"800",color:"#fff"}},["Familiar"])]),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]),
+
+      // Quick actions — Kubayar style big purple btn + row of secondary
+      h("div",{style:{marginBottom:"20px"}},[
+        h("button",{className:"btn-purple tap",style:{marginBottom:"10px"},onClick:()=>set({step:1,screen:"add"})},[
+          h("span",{style:{fontSize:"20px",fontWeight:"900"}},["+"]),
+          "Registrar Gasto",
+        ]),
+        h("div",{style:{display:"flex",gap:"10px"}},[
+          h("button",{className:"btn-sec tap",onClick:()=>set({incStep:1,screen:"income"})},[h("div",{className:"btn-sec-icon"},["↑"]),"Ingreso"]),
+          h("button",{className:"btn-sec tap",style:{position:"relative"},onClick:()=>set({tab:"shopping"})},[
+            h("div",{className:"btn-sec-icon"},["🛒"]),"Lista",
+          ]),
+          h("button",{className:"btn-sec tap",onClick:()=>set({tab:"dashboard"})},[h("div",{className:"btn-sec-icon"},["◎"]),"Análisis"]),
+        ]),
+      ]),
+
+      // Recent transactions — Kubayar table style
+      h("div",{},[
+        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}},[
+          h("div",{className:"section-title"},["Últimos Gastos"]),
+          h("div",{style:{fontSize:"12px",fontWeight:"700",color:"var(--purple)",cursor:"pointer"},onClick:()=>set({tab:"activity"})},["Ver todos →"]),
+        ]),
+        h("div",{className:"section-sub"},[`${user.name} · movimientos recientes`]),
+        h("div",{className:"white-card",style:{padding:"0 16px"}},[
+          ...(cv.uExp.length===0?[h("div",{style:{fontSize:"14px",color:"var(--text3)",textAlign:"center",padding:"28px 0",fontWeight:"600"}},["Sin gastos registrados"])]:
+            cv.uExp.slice(0,6).map((e,i)=>{
+              const ct=getCat(e.category);
+              const isLast=i===Math.min(cv.uExp.length,6)-1;
+              return h("div",{className:"tx-row",style:{borderBottom:isLast?"none":"1px solid var(--border)"}},[
+                h("div",{className:"icon-box",style:{background:ct.bg}},[ct.icon]),
+                h("div",{style:{flex:"1",minWidth:"0"}},[
+                  h("div",{style:{fontSize:"14px",fontWeight:"700",color:"var(--text)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},[e.description||ct.label]),
+                  h("div",{style:{fontSize:"11px",color:"var(--text3)",marginTop:"2px",fontWeight:"600"}},[`${ct.label} · ${e.date?new Date(e.date+"T12:00:00").toLocaleDateString("es-AR",{day:"numeric",month:"short"}):""}`]),
+                ]),
+                h("div",{style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"4px"}},[
+                  h("div",{style:{fontSize:"14px",fontWeight:"800",color:"var(--red)"}},[`-${fmt(e.amount)}`]),
+                  h("button",{style:{background:"none",border:"none",fontSize:"15px",color:"var(--border)",padding:"0",lineHeight:"1",fontWeight:"700"},onClick:()=>upd(d=>({...d,expenses:d.expenses.filter(x=>x.id!==e.id)}))},["×"]),
+                ]),
+              ]);
+            })
+          )
+        ]),
+      ]),
+    ]),
+  ]);
+}
+
+// ── Activity ──
+function sActivity(){
+  const expenses=S.data.expenses||[];
+  const incomes=S.data.incomes||[];
+  const all=[...expenses.map(e=>({...e,type:"expense"})),...incomes.map(i=>({...i,type:"income"}))].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id.localeCompare(a.id));
+
+  return h("div",{className:"screen"},[
+    h("div",{style:{background:"var(--white)",padding:"48px 20px 16px",borderBottom:"1px solid var(--border)",marginBottom:"16px"}},[
+      h("div",{className:"section-title"},["Transacciones"]),
+      h("div",{className:"section-sub"},[`${all.length} movimientos registrados`]),
+    ]),
+    h("div",{style:{padding:"0 20px"}},[
+      all.length===0?h("div",{className:"white-card",style:{textAlign:"center",color:"var(--text3)",fontSize:"14px",fontWeight:"600",padding:"40px"}},["Sin movimientos"]):
+      h("div",{className:"white-card",style:{padding:"0 16px"}},[
+        ...all.map((item,i)=>{
+          const user=USERS.find(u=>u.id===item.user)||USERS[0];
+          const ct=item.type==="expense"?getCat(item.category):null;
+          const isLast=i===all.length-1;
+          return h("div",{className:"tx-row",style:{borderBottom:isLast?"none":"1px solid var(--border)"}},[
+            h("div",{className:"icon-box",style:{background:ct?ct.bg:"var(--green-light)"}},[ct?ct.icon:"💰"]),
+            h("div",{style:{flex:"1",minWidth:"0"}},[
+              h("div",{style:{fontSize:"14px",fontWeight:"700",color:"var(--text)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},[item.description||(ct?ct.label:"Ingreso")]),
+              h("div",{style:{fontSize:"11px",color:"var(--text3)",marginTop:"2px",display:"flex",alignItems:"center",gap:"5px",fontWeight:"600"}},[
+                h("div",{style:{width:"6px",height:"6px",borderRadius:"50%",background:user.color,flexShrink:"0"}}),
+                `${user.name} · ${item.date?new Date(item.date+"T12:00:00").toLocaleDateString("es-AR",{day:"numeric",month:"short"}):""}`,
+              ]),
+            ]),
+            h("div",{style:{fontSize:"14px",fontWeight:"800",color:item.type==="income"?"var(--green)":"var(--red)"}},[`${item.type==="income"?"+":"-"}${fmt(item.amount)}`]),
+          ]);
+        })
+      ])
+    ]),
+  ]);
+}
+
+// ── Shopping ──
+function sShopping(){
+  const shopping=S.data.shopping||[];
+  const pending=shopping.filter(i=>!i.checked);
+  const done=shopping.filter(i=>i.checked);
+  const inp=h("input",{className:"field",placeholder:"Agregar ítem..."});
+  const addItem=()=>{const t=inp.value.trim();if(!t)return;upd(d=>({...d,shopping:[{id:genId(),text:t,checked:false,from:"manual"},...(d.shopping||[])]}));inp.value="";};
+  inp.addEventListener("keydown",e=>e.key==="Enter"&&addItem());
+
+  return h("div",{className:"screen"},[
+    h("div",{style:{background:"var(--white)",padding:"48px 20px 16px",borderBottom:"1px solid var(--border)",marginBottom:"16px"}},[
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}},[
+        h("div",{},[
+          h("div",{className:"section-title"},["Lista de Compras"]),
+          h("div",{className:"section-sub"},[pending.length>0?`${pending.length} pendiente${pending.length>1?"s":""}`:done.length>0?"Todo listo ✓":"Lista vacía"]),
+        ]),
+      ]),
+    ]),
+    h("div",{style:{padding:"0 20px"}},[
+      h("div",{style:{display:"flex",gap:"10px",marginBottom:"16px"}},[
+        inp,
+        h("button",{className:"tap",style:{width:"50px",height:"50px",flexShrink:"0",background:"var(--purple)",color:"#fff",border:"none",borderRadius:"var(--radius-sm)",fontSize:"22px",fontWeight:"800",boxShadow:"0 6px 18px rgba(108,92,231,0.3)"},onClick:addItem},["+"]),
+      ]),
+      ...(pending.length===0&&done.length===0?[h("div",{className:"white-card",style:{textAlign:"center",color:"var(--text3)",fontSize:"14px",fontWeight:"600",padding:"40px"}},["La lista está vacía"])]:
+        [
+          ...(pending.length>0?[h("div",{className:"white-card",style:{padding:"0 16px",marginBottom:"12px"}},[...pending.map((item,i)=>mkShopItem(item,i===pending.length-1))])]: []),
+          ...(done.length>0?[
+            h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"16px 0 10px"}},[
+              h("div",{className:"label-dark"},["COMPLETADOS"]),
+              h("button",{className:"tap",style:{fontSize:"12px",fontWeight:"800",color:"var(--red)",background:"none",border:"none"},onClick:()=>upd(d=>({...d,shopping:d.shopping.filter(i=>!i.checked)}))},["Limpiar"]),
+            ]),
+            h("div",{className:"white-card",style:{padding:"0 16px",opacity:"0.55"}},[...done.map((item,i)=>mkShopItem(item,i===done.length-1))]),
+          ]: []),
+        ]
+      )
+    ]),
+  ]);
+}
+
+function mkShopItem(item,isLast){
+  return h("div",{style:{display:"flex",alignItems:"center",gap:"12px",padding:"13px 0",borderBottom:isLast?"none":"1px solid var(--border)"}},[
+    h("button",{className:"check tap",style:{background:item.checked?"var(--purple)":"none",borderColor:item.checked?"var(--purple)":"var(--border)",color:item.checked?"#fff":""},
+      onClick:()=>upd(d=>({...d,shopping:d.shopping.map(i=>i.id===item.id?{...i,checked:!i.checked}:i)}))},
+      [item.checked?"✓":""]),
+    h("span",{style:{flex:"1",fontSize:"14px",color:"var(--text)",textDecoration:item.checked?"line-through":"none",fontWeight:"600"}},[item.text]),
+    ...(item.from==="expense"?[h("span",{className:"auto-tag"},["AUTO"])]: []),
+    h("button",{style:{background:"none",border:"none",fontSize:"18px",color:"var(--border)",padding:"0 2px",fontWeight:"700"},onClick:()=>upd(d=>({...d,shopping:d.shopping.filter(i=>i.id!==item.id)}))},["×"]),
+  ]);
+}
+
+// ── Dashboard ──
+function sDashboard(){
+  const expenses=S.data.expenses||[];
+  const incomes=S.data.incomes||[];
+  const shBal=incomes.reduce((s,i)=>s+i.amount,0)-expenses.reduce((s,e)=>s+e.amount,0);
+
+  return h("div",{className:"screen"},[
+    h("div",{style:{background:"var(--white)",padding:"48px 20px 16px",borderBottom:"1px solid var(--border)",marginBottom:"16px"}},[
+      h("div",{className:"section-title"},["Análisis de Gastos"]),
+      h("div",{className:"section-sub"},["Comparativa detallada"]),
+    ]),
+    h("div",{style:{padding:"0 20px"}},[
+
+      // Wallet balance — Kubayar main balance style
+      h("div",{style:{marginBottom:"16px"}},[
+        h("div",{className:"white-card",style:{borderLeft:"4px solid var(--purple)"}},[
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},[
+            h("div",{},[
+              h("div",{className:"label-dark"},["FONDO FAMILIAR"]),
+              h("div",{style:{fontSize:"28px",fontWeight:"900",color:shBal>=0?"var(--purple)":"var(--red)",letterSpacing:"-1px"}},[fmt(shBal)]),
+              h("div",{style:{fontSize:"12px",color:shBal>=0?"var(--green)":"var(--red)",fontWeight:"700",marginTop:"4px"}},[shBal>=0?"▲ Saldo positivo":"▼ Revisar gastos"]),
+            ]),
+          ]),
+        ]),
+      ]),
+
+      // User comparison — Kubayar card list style
+      h("div",{style:{marginBottom:"16px"}},[
+        h("div",{className:"label-dark"},["COMPARATIVA USUARIOS"]),
+        h("div",{style:{display:"flex",flexDirection:"column",gap:"10px"}},[
+          ...USERS.map(u=>{
+            const cv=calcUser(u.id);
+            return h("div",{className:"white-card",style:{display:"flex",alignItems:"center",gap:"14px",padding:"16px"}},[
+              h("div",{style:{width:"44px",height:"44px",borderRadius:"14px",background:u.grad,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"900",fontSize:"17px",color:"#fff",flexShrink:"0"}},[u.id]),
+              h("div",{style:{flex:"1"}},[
+                h("div",{style:{fontSize:"14px",fontWeight:"800",color:"var(--text)",marginBottom:"8px"}},[u.name]),
+                h("div",{style:{display:"flex",gap:"16px"}},[
+                  h("div",{},[h("div",{style:{fontSize:"10px",color:"var(--text3)",fontWeight:"700",letterSpacing:"0.5px"}},["INGRESOS"]),h("div",{style:{fontSize:"13px",fontWeight:"800",color:"var(--green)"}},[fmt(cv.totI)])]),
+                  h("div",{},[h("div",{style:{fontSize:"10px",color:"var(--text3)",fontWeight:"700",letterSpacing:"0.5px"}},["GASTOS"]),h("div",{style:{fontSize:"13px",fontWeight:"800",color:"var(--red)"}},[fmt(cv.totE)])]),
+                  h("div",{},[h("div",{style:{fontSize:"10px",color:"var(--text3)",fontWeight:"700",letterSpacing:"0.5px"}},["SALDO"]),h("div",{style:{fontSize:"13px",fontWeight:"800",color:cv.bal>=0?"var(--purple)":"var(--red)"}},[fmt(cv.bal)])]),
+                ]),
+              ]),
+            ]);
+          })
+        ])
+      ]),
+
+      // Category breakdown — Kubayar table style
+      h("div",{style:{marginBottom:"16px"}},[
+        h("div",{className:"label-dark"},["GASTOS POR CATEGORÍA"]),
+        h("div",{className:"white-card",style:{padding:"0 16px"}},[
+          ...CATS.map((ct,idx)=>{
+            const nT=expenses.filter(e=>e.user==="N"&&e.category===ct.id).reduce((s,e)=>s+e.amount,0);
+            const fT=expenses.filter(e=>e.user==="F"&&e.category===ct.id).reduce((s,e)=>s+e.amount,0);
+            if(nT+fT===0)return null;
+            const mx=Math.max(...CATS.map(c=>expenses.filter(e=>e.category===c.id).reduce((s,e)=>s+e.amount,0)),1);
+            const isLast=idx===CATS.length-1;
+            return h("div",{style:{padding:"14px 0",borderBottom:isLast?"none":"1px solid var(--border)"}},[
+              h("div",{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px"}},[
+                h("div",{className:"icon-box",style:{background:ct.bg,width:"36px",height:"32px"}},[ct.icon]),
+                h("div",{style:{flex:"1",fontSize:"13px",fontWeight:"700",color:"var(--text)"}},[ct.label]),
+                h("div",{style:{fontSize:"13px",fontWeight:"800",color:"var(--text2)"}},[fmt(nT+fT)]),
+              ]),
+              h("div",{style:{display:"flex",gap:"4px",marginBottom:"5px"}},[
+                h("div",{className:"bar-track"},[h("div",{className:"bar-fill",style:{width:`${(nT/mx)*100}%`,background:USERS[0].color}})]),
+                h("div",{className:"bar-track"},[h("div",{className:"bar-fill",style:{width:`${(fT/mx)*100}%`,background:USERS[1].color}})]),
+              ]),
+              h("div",{style:{display:"flex",justifyContent:"space-between"}},[
+                h("span",{style:{fontSize:"10px",color:USERS[0].color,fontWeight:"700"}},[`N: ${fmt(nT)}`]),
+                h("span",{style:{fontSize:"10px",color:USERS[1].color,fontWeight:"700"}},[`F: ${fmt(fT)}`]),
+              ]),
+            ]);
+          }).filter(Boolean),
+          ...(expenses.length===0?[h("div",{style:{fontSize:"14px",color:"var(--text3)",textAlign:"center",padding:"28px 0",fontWeight:"600"}},["Sin datos aún"])]: []),
+        ]),
+      ]),
+
+      h("div",{style:{display:"flex",flexDirection:"column",gap:"10px",paddingBottom:"20px"}},[
+        h("button",{className:"tap",style:{width:"100%",background:"var(--red-light)",border:"1px solid rgba(244,67,54,0.2)",color:"var(--red)",borderRadius:"var(--radius-sm)",padding:"14px",fontSize:"13px",fontWeight:"800"},
+          onClick:()=>{if(confirm("¿Borrar todos los datos?"))upd(()=>EMPTY);}},["Borrar todos los datos"]),
+        h("button",{className:"tap",style:{width:"100%",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text2)",borderRadius:"var(--radius-sm)",padding:"14px",fontSize:"13px",fontWeight:"700"},
+          onClick:()=>{localStorage.removeItem("gf_user");set({activeUser:null,screen:"pick"});}},["Cambiar usuario"]),
+      ]),
+    ]),
+  ]);
+}
+
+// ── Add expense ──
+function sAdd(){
+  const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
+  const{amount,desc,cat,step}=S;
+  const pane=h("div",{style:{padding:"0 20px",flex:"1"}});
+
+  if(step===1){
+    pane.appendChild(h("div",{style:{fontSize:"15px",fontWeight:"700",color:"var(--text2)",marginBottom:"20px"}},["Ingresá el monto"]));
+    pane.appendChild(h("div",{className:"amt-area"},[
+      h("div",{style:{fontSize:"11px",fontWeight:"700",color:"var(--text3)",letterSpacing:"1px",marginBottom:"6px"}},["MONTO EN $ARS"]),
+      h("div",{className:"amt-big",style:{color:amount?user.color:"var(--border)"}},[amount||"0"]),
+    ]));
+    pane.appendChild(mkNumpad(fn=>set({amount:fn(S.amount)}),()=>S.amount&&set({step:2}),user.color));
+  } else if(step===2){
+    pane.appendChild(h("div",{style:{fontSize:"15px",fontWeight:"700",color:"var(--text2)",marginBottom:"16px"}},["Seleccioná la categoría"]));
+    pane.appendChild(h("div",{className:"cat-grid"},[
+      ...CATS.map(ct=>h("button",{className:"cat-btn tap",style:{borderColor:cat===ct.id?ct.color:"var(--border)",background:cat===ct.id?ct.bg:"var(--white)"},onClick:()=>set({cat:ct.id,step:3})},[
+        h("span",{style:{fontSize:"26px"}},[ct.icon]),
+        h("span",{style:{fontSize:"11px",fontWeight:"700",color:cat===ct.id?ct.color:"var(--text3)"}},[ct.label]),
+      ]))
+    ]));
+  } else {
+    const ctObj=getCat(cat);
+    pane.appendChild(h("div",{style:{fontSize:"15px",fontWeight:"700",color:"var(--text2)",marginBottom:"16px"}},["Confirmá el gasto"]));
+    const card=h("div",{className:"white-card",style:{marginBottom:"16px",textAlign:"center",borderTop:`3px solid ${ctObj.color}`}},[
+      h("div",{style:{width:"52px",height:"46px",borderRadius:"14px",background:ctObj.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"26px",margin:"0 auto 10px"}},[ctObj.icon]),
+      h("div",{className:"confirm-amt",style:{color:"var(--text)",marginBottom:"4px"}},[fmt(parseFloat(amount))]),
+      h("div",{style:{fontSize:"13px",fontWeight:"700",color:ctObj.color,marginBottom:"16px"}},[ctObj.label]),
+    ]);
+    const inp=h("input",{className:"field",placeholder:"Descripción (opcional)",maxlength:"50",style:{textAlign:"center"}});
+    inp.value=desc;inp.addEventListener("input",e=>set({desc:e.target.value}));
+    card.appendChild(inp);
+    if(cat==="mercaderia"&&desc)card.appendChild(h("div",{style:{marginTop:"10px",fontSize:"12px",color:"var(--purple)",fontWeight:"700"}},["🛒 Se agregará a lista de compras"]));
+    pane.appendChild(card);
+    pane.appendChild(h("div",{style:{display:"flex",gap:"10px"}},[
+      h("button",{className:"btn-outline tap",onClick:()=>set({step:2})},["← Editar"]),
+      h("button",{className:"btn-purple tap",style:{flex:"1",background:user.grad,boxShadow:`0 6px 18px ${user.color}40`},onClick:saveExp},["Guardar"]),
+    ]));
+  }
+
+  return h("div",{className:"screen"},[
+    mkSubH("Nuevo Gasto",()=>set({step:1,screen:"main",tab:"home"})),
+    mkSteps(step,3,user.color),pane,
+  ]);
+}
+
+// ── Income ──
+function sIncome(){
+  const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
+  const{incAmt,incDesc,incStep}=S;
+  const pane=h("div",{style:{padding:"0 20px",flex:"1"}});
+
+  if(incStep===1){
+    pane.appendChild(h("div",{style:{fontSize:"15px",fontWeight:"700",color:"var(--text2)",marginBottom:"20px"}},["Ingresá el monto"]));
+    pane.appendChild(h("div",{className:"amt-area"},[
+      h("div",{style:{fontSize:"11px",fontWeight:"700",color:"var(--text3)",letterSpacing:"1px",marginBottom:"6px"}},["MONTO EN $ARS"]),
+      h("div",{className:"amt-big",style:{color:incAmt?"var(--green)":"var(--border)"}},[incAmt||"0"]),
+    ]));
+    pane.appendChild(mkNumpad(fn=>set({incAmt:fn(S.incAmt)}),()=>S.incAmt&&set({incStep:2}),"var(--green)"));
+  } else {
+    pane.appendChild(h("div",{style:{fontSize:"15px",fontWeight:"700",color:"var(--text2)",marginBottom:"16px"}},["Confirmá el ingreso"]));
+    const card=h("div",{className:"white-card",style:{marginBottom:"16px",textAlign:"center",borderTop:"3px solid var(--green)"}},[
+      h("div",{style:{width:"52px",height:"46px",borderRadius:"14px",background:"var(--green-light)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"26px",margin:"0 auto 10px"}},["💰"]),
+      h("div",{className:"confirm-amt",style:{color:"var(--green)",marginBottom:"4px"}},[fmt(parseFloat(incAmt))]),
+      h("div",{style:{fontSize:"13px",fontWeight:"700",color:"var(--text2)",marginBottom:"16px"}},[`Ingreso · ${user.name}`]),
+    ]);
+    const inp=h("input",{className:"field",placeholder:"Ej: Sueldo enero",maxlength:"50",style:{textAlign:"center"}});
+    inp.value=incDesc;inp.addEventListener("input",e=>set({incDesc:e.target.value}));
+    card.appendChild(inp);pane.appendChild(card);
+    pane.appendChild(h("div",{style:{display:"flex",gap:"10px"}},[
+      h("button",{className:"btn-outline tap",onClick:()=>set({incStep:1})},["← Editar"]),
+      h("button",{className:"btn-purple tap",style:{flex:"1",background:"linear-gradient(135deg,var(--green),var(--green2))",boxShadow:"0 6px 18px rgba(0,196,140,0.35)"},onClick:saveInc},["Guardar Ingreso"]),
+    ]));
+  }
+
+  return h("div",{className:"screen"},[
+    mkSubH("Nuevo Ingreso",()=>set({incStep:1,screen:"main",tab:"home"})),
+    mkSteps(incStep,2,"var(--green)"),pane,
+  ]);
+}
+
+// ── Loading ──
+function sLoading(){
+  return h("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:"16px",background:"var(--bg)"}},[
+    h("div",{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}},[
+      h("div",{style:{width:"40px",height:"40px",borderRadius:"13px",background:"var(--purple)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",boxShadow:"0 6px 18px rgba(108,92,231,0.35)"}}),
+      h("div",{},[
+        h("div",{style:{fontSize:"18px",fontWeight:"900",color:"var(--text)",letterSpacing:"-0.5px"}},["Mi Wallet"]),
+        h("div",{style:{fontSize:"11px",color:"var(--text3)",fontWeight:"600"}},["Gastos Familiares"]),
+      ]),
+    ]),
+    h("div",{style:{display:"flex",alignItems:"center",gap:"8px"}},[
+      h("div",{className:"spinner"}),
+      h("div",{style:{fontSize:"13px",color:"var(--text3)",fontWeight:"600"}},["Conectando..."]),
+    ]),
+  ]);
+}
+
+// ── Render ──
+function render(){
+  const app=document.getElementById("app");
+  app.innerHTML="";
+  if(S.toast)app.appendChild(h("div",{className:"toast"},[S.toast]));
+  app.appendChild(h("div",{className:"sync-row"},[
+    ...(S.syncing?[h("div",{className:"spinner"})]: []),
+    h("div",{className:"sync-dot",style:{background:S.online?"var(--green)":"var(--border)"}}),
+  ]));
+  const screens={loading:sLoading,pick:sPick,main:sMain,add:sAdd,income:sIncome};
+  app.appendChild((screens[S.screen]||sLoading)());
+}
+
+render();
+load().then(()=>{if(pollIv)clearInterval(pollIv);pollIv=setInterval(poll,6000);});
+</script>
+</body>
 </html>
