@@ -206,7 +206,7 @@ async function gsRun(fn,param){
 let S={
   screen:"loading",tab:"home",
   activeUser:localStorage.getItem("gf_user")||null,
-  data:EMPTY,syncing:false,online:false,toast:null,
+  data:EMPTY,syncing:false,online:false,toast:null,loginPin:"",loginUser:null,loginErr:false,
   amount:"",desc:"",cat:null,step:1,
   incAmt:"",incDesc:"",incStep:1,
 };
@@ -217,8 +217,8 @@ function showToast(msg){if(toastT)clearTimeout(toastT);set({toast:msg});toastT=s
 
 async function load(){
   set({syncing:true});
-  try{const d=await gsRun("getData");set({data:d||EMPTY,online:true,syncing:false,screen:S.activeUser?"main":"pick"});}
-  catch{set({online:false,syncing:false,screen:S.activeUser?"main":"pick"});}
+  try{const d=await gsRun("getData");set({data:d||EMPTY,online:true,syncing:false,screen:S.activeUser?"main":"login"});}
+  catch{set({online:false,syncing:false,screen:S.activeUser?"main":"login"});}
 }
 
 function scheduleWrite(data){
@@ -352,31 +352,141 @@ function mkSubH(title,onBack,right){
   ]);
 }
 
-// ── Pick screen ──
-function sPick(){
-  return h("div",{style:{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",justifyContent:"center",padding:"32px 20px"}},[
-    h("div",{style:{marginBottom:"36px"}},[
-      h("div",{style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"20px"}},[
-        h("div",{style:{width:"44px",height:"44px",borderRadius:"14px",background:"var(--purple)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",boxShadow:"0 6px 18px rgba(108,92,231,0.35)"}}),
-        h("div",{},[
-          h("div",{style:{fontSize:"18px",fontWeight:"900",color:"var(--text)",letterSpacing:"-0.5px"}},["Mi Wallet"]),
-          h("div",{style:{fontSize:"11px",color:"var(--text3)",fontWeight:"600"}},["Gestión de gastos familiares"]),
+// ── Login screen ──
+function sLogin(){
+  const pin=S.loginPin||"";
+  const err=S.loginErr||false;
+  const selectedUser=S.loginUser||null;
+
+  // If no user selected yet, show user picker first
+  if(!selectedUser){
+    return h("div",{style:{minHeight:"100vh",background:"var(--white)",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"0"}},[
+      // Top decoration
+      h("div",{style:{height:"3px",background:"linear-gradient(90deg,#2979FF,#6C5CE7,#9C27B0)"}}),
+      // Content
+      h("div",{style:{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"40px 32px"}},[
+        // VND Logo
+        h("div",{style:{textAlign:"center",marginBottom:"48px"}},[
+          h("div",{style:{display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:"16px",position:"relative",width:"80px",height:"80px"}},[
+            // Circle bg
+            h("div",{style:{position:"absolute",width:"80px",height:"80px",borderRadius:"24px",background:"linear-gradient(135deg,#6C5CE7,#2979FF)",boxShadow:"0 12px 40px rgba(108,92,231,0.35)"}}),
+            // VND letters
+            h("div",{style:{position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"center"}},[
+              h("span",{style:{fontFamily:"'Nunito',sans-serif",fontSize:"13px",fontWeight:"900",color:"rgba(255,255,255,0.6)",letterSpacing:"-1px",position:"absolute",left:"12px",top:"50%",transform:"translateY(-50%)"}},["V"]),
+              h("span",{style:{fontFamily:"'Nunito',sans-serif",fontSize:"20px",fontWeight:"900",color:"#ffffff",letterSpacing:"-1px",position:"relative",zIndex:2}},["N"]),
+              h("span",{style:{fontFamily:"'Nunito',sans-serif",fontSize:"13px",fontWeight:"900",color:"rgba(255,255,255,0.6)",letterSpacing:"-1px",position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)"}},["D"]),
+            ]),
+          ]),
+          h("div",{style:{fontSize:"24px",fontWeight:"900",color:"var(--text)",letterSpacing:"-1px",marginBottom:"4px"}},["Mi Wallet"]),
+          h("div",{style:{fontSize:"12px",fontWeight:"600",color:"var(--text3)",letterSpacing:"2px",textTransform:"uppercase"}},["Gastos Familiares"]),
+        ]),
+        // Divider
+        h("div",{style:{display:"flex",alignItems:"center",gap:"12px",marginBottom:"28px"}},[
+          h("div",{style:{flex:1,height:"1px",background:"var(--border)"}}),
+          h("div",{style:{fontSize:"11px",fontWeight:"700",color:"var(--text3)",letterSpacing:"0.5px"}},["SELECCIONÁ TU PERFIL"]),
+          h("div",{style:{flex:1,height:"1px",background:"var(--border)"}}),
+        ]),
+        // User buttons
+        h("div",{style:{display:"flex",flexDirection:"column",gap:"12px"}},[
+          ...USERS.map(u=>h("button",{className:"tap",
+            style:{
+              display:"flex",alignItems:"center",gap:"16px",
+              background:u.id==="N"?"var(--white)":"var(--white)",
+              border:`1.5px solid var(--border)`,
+              borderRadius:"18px",padding:"18px 20px",cursor:"pointer",
+              transition:"all 0.15s",textAlign:"left",
+              boxShadow:"0 2px 12px rgba(0,0,0,0.06)",
+            },
+            onClick:()=>set({loginUser:u.id,loginPin:"",loginErr:false,screen:"login"})
+          },[
+            h("div",{style:{width:"48px",height:"48px",borderRadius:"15px",background:u.grad,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"900",fontSize:"18px",color:"#fff",flexShrink:0,boxShadow:`0 4px 14px ${u.color}40`}},[u.id]),
+            h("div",{style:{flex:1}},[
+              h("div",{style:{fontSize:"16px",fontWeight:"800",color:"var(--text)",letterSpacing:"-0.3px"}},[u.name]),
+              h("div",{style:{fontSize:"11px",color:"var(--text3)",marginTop:"3px",fontWeight:"600"}},["Ingresar con PIN →"]),
+            ]),
+            h("div",{style:{width:"28px",height:"28px",borderRadius:"9px",background:`${u.color}12`,display:"flex",alignItems:"center",justifyContent:"center",color:u.color,fontSize:"14px"}}),
+          ]))
         ]),
       ]),
-      h("div",{style:{fontSize:"13px",color:"var(--text2)",fontWeight:"600"}},["Seleccioná tu perfil para continuar"]),
-    ]),
-    h("div",{style:{display:"flex",flexDirection:"column",gap:"12px"}},[
-      ...USERS.map(u=>h("button",{className:"white-card tap",style:{display:"flex",alignItems:"center",gap:"16px",textAlign:"left",border:"1px solid var(--border)",cursor:"pointer",transition:"all 0.15s"},
-        onClick:()=>{localStorage.setItem("gf_user",u.id);set({activeUser:u.id,screen:"main",tab:"home"});}},[
-        h("div",{className:"pick-avatar",style:{background:u.grad}},[u.id]),
-        h("div",{style:{flex:"1"}},[
-          h("div",{style:{fontSize:"16px",fontWeight:"800",color:"var(--text)"}},[u.name]),
-          h("div",{style:{fontSize:"12px",color:"var(--text3)",marginTop:"2px",fontWeight:"600"}},["Tocar para ingresar →"]),
-        ]),
-        h("div",{style:{width:"32px",height:"32px",borderRadius:"10px",background:`${u.color}18`,display:"flex",alignItems:"center",justifyContent:"center",color:u.color,fontSize:"16px",fontWeight:"700"}},["→"]),
-      ]))
+      // Bottom
+      h("div",{style:{padding:"20px 32px 32px",textAlign:"center"}},[
+        h("div",{style:{fontSize:"11px",color:"var(--text3)",fontWeight:"600",letterSpacing:"0.3px"}},["Versión 1.0 · Uso exclusivo familiar"]),
+      ]),
+    ]);
+  }
+
+  // PIN entry screen
+  const user=USERS.find(u=>u.id===selectedUser)||USERS[0];
+  const dots=Array.from({length:4},(_,i)=>i<pin.length);
+
+  return h("div",{style:{minHeight:"100vh",background:"var(--white)",display:"flex",flexDirection:"column"}},[
+    h("div",{style:{height:"3px",background:"linear-gradient(90deg,#2979FF,#6C5CE7,#9C27B0)"}}),
+    h("div",{style:{flex:1,display:"flex",flexDirection:"column",padding:"0 32px 32px"}},[
+      // Back + header
+      h("div",{style:{display:"flex",alignItems:"center",paddingTop:"48px",marginBottom:"40px"}},[
+        h("button",{className:"tap",style:{background:"none",border:"none",color:"var(--text3)",fontSize:"24px",padding:"0",marginRight:"auto"},
+          onClick:()=>set({loginUser:null,loginPin:"",loginErr:false,screen:"login"})},["←"]),
+      ]),
+      // User avatar centered
+      h("div",{style:{textAlign:"center",marginBottom:"32px"}},[
+        h("div",{style:{width:"72px",height:"72px",borderRadius:"22px",background:user.grad,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:"900",fontSize:"28px",color:"#fff",margin:"0 auto 14px",boxShadow:`0 10px 32px ${user.color}40`}},[user.id]),
+        h("div",{style:{fontSize:"20px",fontWeight:"900",color:"var(--text)",letterSpacing:"-0.5px"}},[`Hola, ${user.name}`]),
+        h("div",{style:{fontSize:"12px",color:"var(--text3)",marginTop:"4px",fontWeight:"600"}},["Ingresá tu PIN de 4 dígitos"]),
+      ]),
+      // PIN dots
+      h("div",{style:{display:"flex",justifyContent:"center",gap:"16px",marginBottom:err?"16px":"32px"}},[
+        ...dots.map((filled,i)=>h("div",{style:{
+          width:"16px",height:"16px",borderRadius:"50%",
+          background:err?"var(--red)":filled?user.color:"var(--border)",
+          transform:filled?"scale(1.1)":"scale(1)",
+          transition:"all 0.15s",
+          boxShadow:filled&&!err?`0 4px 10px ${user.color}50`:"none",
+        }}))
+      ]),
+      // Error msg
+      err?h("div",{style:{textAlign:"center",fontSize:"13px",fontWeight:"700",color:"var(--red)",marginBottom:"20px"}},["PIN incorrecto. Intentá de nuevo."]):null,
+      // Numpad
+      h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px",maxWidth:"280px",margin:"0 auto",width:"100%"}},[
+        ...["1","2","3","4","5","6","7","8","9","","0","⌫"].map(k=>{
+          if(k==="")return h("div");
+          const isConfirm=k==="⌫";
+          return h("button",{className:"tap",style:{
+            background:isConfirm?"var(--bg)":"var(--white)",
+            border:`1.5px solid var(--border)`,
+            borderRadius:"16px",padding:"18px 0",
+            fontSize:isConfirm?"20px":"22px",
+            fontWeight:"700",color:"var(--text)",
+            boxShadow:"0 2px 8px rgba(0,0,0,0.05)",
+            transition:"all 0.1s",
+          },onClick:()=>{
+            if(k==="⌫"){
+              set({loginPin:pin.slice(0,-1),loginErr:false});
+            } else {
+              const newPin=pin+k;
+              if(newPin.length<=4){
+                set({loginPin:newPin,loginErr:false});
+                if(newPin.length===4){
+                  setTimeout(()=>{
+                    if(newPin==="2098"){
+                      localStorage.setItem("gf_user",selectedUser);
+                      set({activeUser:selectedUser,screen:"main",tab:"home",loginPin:"",loginUser:null,loginErr:false});
+                    } else {
+                      set({loginErr:true,loginPin:""});
+                    }
+                  },150);
+                }
+              }
+            }
+          }},[k]);
+        })
+      ]),
     ]),
   ]);
+}
+
+// ── Pick screen ── (redirige a login)
+function sPick(){
+  return sLogin();
 }
 
 // ── Main ──
@@ -683,7 +793,7 @@ function sDashboard(){
         h("button",{className:"tap",style:{width:"100%",background:"var(--red-light)",border:"1px solid rgba(244,67,54,0.2)",color:"var(--red)",borderRadius:"var(--radius-sm)",padding:"14px",fontSize:"13px",fontWeight:"800"},
           onClick:()=>{if(confirm("¿Borrar todos los datos?"))upd(()=>EMPTY);}},["Borrar todos los datos"]),
         h("button",{className:"tap",style:{width:"100%",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text2)",borderRadius:"var(--radius-sm)",padding:"14px",fontSize:"13px",fontWeight:"700"},
-          onClick:()=>{localStorage.removeItem("gf_user");set({activeUser:null,screen:"pick"});}},["Cambiar usuario"]),
+          onClick:()=>{localStorage.removeItem("gf_user");set({activeUser:null,loginUser:null,loginPin:"",loginErr:false,screen:"login"});}},["Cambiar usuario"]),
       ]),
     ]),
   ]);
@@ -796,7 +906,7 @@ function render(){
     ...(S.syncing?[h("div",{className:"spinner"})]: []),
     h("div",{className:"sync-dot",style:{background:S.online?"var(--green)":"var(--border)"}}),
   ]));
-  const screens={loading:sLoading,pick:sPick,main:sMain,add:sAdd,income:sIncome};
+  const screens={loading:sLoading,pick:sPick,login:sLogin,main:sMain,add:sAdd,income:sIncome};
   app.appendChild((screens[S.screen]||sLoading)());
 }
 
