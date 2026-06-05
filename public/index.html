@@ -210,7 +210,7 @@ let S={
   amount:"",desc:"",cat:null,step:1,
   incAmt:"",incDesc:"",incStep:1,
 };
-let pollIv=null,writeT=null,toastT=null;
+let pollIv=null,writeT=null,toastT=null,writing=false;
 
 function set(patch){S={...S,...patch};render();}
 function showToast(msg){if(toastT)clearTimeout(toastT);set({toast:msg});toastT=setTimeout(()=>set({toast:null}),2500);}
@@ -223,20 +223,30 @@ async function load(){
 
 function scheduleWrite(data){
   if(writeT)clearTimeout(writeT);
-  writeT=setTimeout(async()=>{try{await gsRun("saveData",data);set({online:true});}catch{set({online:false});}},800);
+  writing=true;
+  writeT=setTimeout(async()=>{
+    try{
+      await gsRun("saveData",data);
+      set({online:true});
+    }catch{
+      set({online:false});
+    }finally{
+      writing=false;
+    }
+  },800);
 }
 
 async function poll(){
+  // No polling mientras se está escribiendo
+  if(writing)return;
   try{
     const d=await gsRun("getData");
-    if(d){
+    if(d&&!writing){
       S.data=d;
       S.online=true;
-      // Solo actualiza números sin re-renderizar, evita titileo
       if(S.screen==="main"&&S.tab==="home"){
         updateNums();
       }
-      // Actualiza el dot de sincronización sin re-render
       const dot=document.querySelector(".sync-dot");
       if(dot)dot.style.background="var(--green)";
     }
