@@ -25,7 +25,6 @@ const genId=()=>
   Date.now().toString(36)+
   Math.random().toString(36).slice(2,6);
 
-// Proxy URL
 const PROXY_URL="/api/sync";
 
 async function gsRun(fn,param){
@@ -128,7 +127,6 @@ async function load(){
     syncing:true
   });
 
-  // BACKUP LOCAL
   let localData=EMPTY;
 
   try{
@@ -144,7 +142,6 @@ async function load(){
     console.error("localStorage error",e);
   }
 
-  // mostrar instantáneo
   set({
     data:localData||EMPTY
   });
