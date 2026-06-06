@@ -1,4 +1,3 @@
-
 const EMPTY={
   expenses:[],
   incomes:[],
@@ -209,7 +208,6 @@ async function load(){
 
 function scheduleWrite(data){
 
-  // guardar local SIEMPRE
   try{
 
     localStorage.setItem(
@@ -256,7 +254,6 @@ function scheduleWrite(data){
 
 async function poll(){
 
-  // evitar overwrite mientras escribe
   if(writing)return;
 
   try{
@@ -281,10 +278,8 @@ async function poll(){
         customCats:d.customCats||[]
       };
 
-      // actualizar memoria
       S.data=merged;
 
-      // backup local
       localStorage.setItem(
         "wallet_data",
         JSON.stringify(merged)
