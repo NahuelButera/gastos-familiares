@@ -950,11 +950,6 @@ function sDashboard(){
 }
 
 // ── Add expense ──
-h("div",{
-  id:"amt-live",
-  className:"amt-big",
-  style:{color:amount?targetUser.color:"var(--border2)"}
-},[amount||"0"])
 
 function sIncome(){
   const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
