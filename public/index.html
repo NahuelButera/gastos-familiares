@@ -137,8 +137,8 @@
 
   /* Numpad */
   .np { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:320px; margin:0 auto; width:100%; }
-  .nk { background:var(--white); border:1.5px solid var(--border); border-radius:var(--r); padding:16px 0; font-size:22px; font-weight:600; color:var(--text); box-shadow:var(--sh); transition:all .1s; width:100%; }
-  .nk:active { transform:scale(.91); background:var(--sage-l); border-color:var(--sage-m); }
+  .nk, .numkey { background:var(--white); border:1.5px solid var(--border); border-radius:var(--r); padding:16px 0; font-size:22px; font-weight:600; color:var(--text); box-shadow:var(--sh); transition:all .1s; width:100%; }
+  .nk:active, .numkey:active { transform:scale(.91); background:var(--sage-l); border-color:var(--sage-m); }
   .nk.sp  { background:var(--sage-l); color:var(--sage); border-color:var(--sage-m); font-size:18px; }
   .nk.del { background:transparent; border:none; box-shadow:none; color:var(--text3); font-size:18px; opacity:.7; }
 
@@ -379,7 +379,11 @@ async function load(){
   try{
     const d=await gsRun("getData");
     if(d){
-      const merged=local?mergeData(local,d):d;
+      // Only merge if server has actual data, otherwise keep local
+      const serverHasData=(d.expenses?.length>0||d.incomes?.length>0);
+      const merged=local
+        ?(serverHasData?mergeData(local,d):local)
+        :d;
       lsSave(merged);
       set({data:merged,online:true,screen:S.activeUser?"main":"login"});
     }else if(!local){
