@@ -621,12 +621,33 @@ const h=(tag,attr={},kids=[])=>{
 function mkNumpad(onChange,onConfirm,color){
   return h("div",{className:"numpad"},["1","2","3","4","5","6","7","8","9","⌫","0","✓"].map(k=>{
     const st={};
-    if(k==="✓"){st.background=color;st.color="#fff";st.border="none";st.boxShadow=`0 6px 16px ${color}50`;}
-    else if(k==="⌫"){st.background="var(--bg)";st.color="var(--gray-dark)";st.border="none";}
+    if(k==="✓"){
+      st.background=color;
+      st.color="#fff";
+      st.border="none";
+      st.boxShadow=`0 6px 16px ${color}50`;
+    }
+    else if(k==="⌫"){
+      st.background="var(--bg)";
+      st.color="var(--gray)";
+      st.border="none";
+    }
+
     return h("button",{className:"numkey tap",style:st,onClick:()=>{
-      if(k==="⌫")onChange(v=>v.slice(0,-1));
-      else if(k==="✓")onConfirm();
-      else onChange(v=>v.length<9?v+k:v);
+      if(k==="⌫"){
+        S.amount = S.amount.slice(0,-1);
+      }
+      else if(k==="✓"){
+        onConfirm();
+        return;
+      }
+      else{
+        if(S.amount.length<9) S.amount+=k;
+      }
+
+      // ✅ actualización directa SIN render
+      const el=document.getElementById("amt-live");
+      if(el) el.textContent=S.amount||"0";
     }},[k]);
   }));
 }
@@ -929,51 +950,11 @@ function sDashboard(){
 }
 
 // ── Add expense ──
-function sAdd(){
-  const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
-  const{amount,desc,cat,step,expUser}=S;
-  const targetUser=USERS.find(u=>u.id===expUser)||user;
-  const pane=h("div",{style:{padding:"0 20px",flex:1}});
-  if(step===1){
-    pane.appendChild(h("div",{style:{textAlign:"center",marginBottom:"24px"}},[
-      h("div",{style:{fontSize:"12px",fontWeight:"500",color:"var(--gray)",letterSpacing:"1px",textTransform:"uppercase",marginBottom:"16px"}},["¿Cuánto gastaste?"]),
-      h("div",{style:{display:"flex",alignItems:"baseline",justifyContent:"center",gap:"8px"}},[
-        h("span",{style:{fontSize:"32px",fontWeight:"300",color:"var(--gray)",lineHeight:1}},["$"]),
-        h("div",{className:"amt-big",style:{color:amount?targetUser.color:"var(--border2)"}},[amount||"0"]),
-      ]),
-    ]));
-    pane.appendChild(mkNumpad(fn=>set({amount:fn(S.amount)}),()=>S.amount&&set({step:2}),targetUser.color));
-  } else if(step===2){
-    pane.appendChild(h("div",{style:{fontSize:"12px",fontWeight:"500",color:"var(--gray)",letterSpacing:"1px",textTransform:"uppercase",marginBottom:"16px",textAlign:"center"}},["Categoría"]));
-    pane.appendChild(h("div",{className:"cat-grid"},[
-      ...getCats().map(ct=>{const sel=cat===ct.id;return h("button",{className:`cat-btn${sel?" sel":""} tap`,onClick:()=>set({cat:ct.id,step:3})},[mkIcon(ct.icon,22,sel?"var(--purple)":ct.color),h("span",{style:{fontSize:"11px",fontWeight:"600",color:sel?"var(--purple)":ct.color}},[ct.label])]);
-      }),
-      h("button",{className:"cat-btn tap",style:{borderStyle:"dashed",borderColor:"var(--border2)"},onClick:()=>set({screen:"newcat"})},[h("div",{style:{fontSize:"22px",color:"var(--gray)",fontWeight:"300"}},["+"]),h("span",{style:{fontSize:"11px",fontWeight:"600",color:"var(--gray)"}},["Nueva"])]),
-    ]));
-  } else {
-    const ctObj=getCat(cat);
-    pane.appendChild(h("div",{style:{textAlign:"center",marginBottom:"20px"}},[
-      h("div",{style:{width:"64px",height:"64px",borderRadius:"50%",background:ctObj.bg,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",boxShadow:`0 6px 20px ${ctObj.color}25`}},[mkIcon(ctObj.icon,28,ctObj.color)]),
-      h("div",{className:"confirm-amt",style:{color:"var(--text)",marginBottom:"6px"}},[fmt(parseFloat(amount))]),
-      h("div",{style:{fontSize:"13px",fontWeight:"600",color:ctObj.color,marginBottom:"4px"}},[ctObj.label]),
-      h("div",{style:{fontSize:"12px",color:"var(--gray)"}},[`→ ${targetUser.name}`]),
-    ]));
-    const inp=h("input",{className:"field",placeholder:"Descripción (opcional)",maxlength:"50",style:{textAlign:"center",marginBottom:"16px"}});
-    inp.value=desc;inp.addEventListener("input",e=>set({desc:e.target.value}));
-    pane.appendChild(inp);
-    pane.appendChild(h("div",{style:{display:"flex",gap:"10px"}},[
-      h("button",{className:"btn-outline tap",onClick:()=>set({step:2})},["←"]),
-      h("button",{className:"btn-primary tap",style:{flex:1,background:targetUser.grad,boxShadow:`0 6px 18px ${targetUser.color}35`},onClick:()=>{
-        if(!amount||!cat)return;
-        const exp={id:genId(),amount:parseFloat(amount),description:desc,category:cat,user:expUser||S.activeUser,date:toStr()};
-        upd(d=>({...d,expenses:[exp,...(d.expenses||[])],shopping:(cat==="mercaderia"&&desc.trim())?[{id:genId(),text:desc.trim(),checked:false},...(d.shopping||[])]:(d.shopping||[])}));
-        set({amount:"",desc:"",cat:null,step:1,expUser:null,screen:"main",tab:"home"});
-        showToast("✓ Gasto registrado");
-      }},["Guardar"]),
-    ]));
-  }
-  return h("div",{className:"screen"},[mkSubH("Nuevo Gasto · "+targetUser.name,()=>set({step:1,expUser:null,screen:"main",tab:"home"})),mkSteps(step,3,targetUser.color),pane]);
-}
+h("div",{
+  id:"amt-live",
+  className:"amt-big",
+  style:{color:amount?targetUser.color:"var(--border2)"}
+},[amount||"0"])
 
 function sIncome(){
   const user=USERS.find(u=>u.id===S.activeUser)||USERS[0];
