@@ -321,7 +321,7 @@ async function load(){
       const merged=mergeData(S.data,d);
       lsSave(merged);
       S.data=merged;
-      if(S.screen==='main'&&S.tab==='home')updateNums();
+      if(S.screen==='main')render();
       const dot=document.querySelector('.sync-dot');
       if(dot)dot.style.background='var(--sage)';
     } else {
@@ -347,8 +347,8 @@ async function poll(){
     if(d&&!writing){
       S.data=d;
       S.online=true;
-      if(S.screen==="main"&&S.tab==="home"){
-        updateNums();
+      if(S.screen==="main"){
+        render(); // full re-render to show latest transactions
       }
       const dot=document.querySelector(".sync-dot");
       if(dot){dot.style.background="var(--sage)";};
